@@ -12,7 +12,7 @@ class Universe:
 
         # Expand Universe at init time
         new_universe = []
-        column_planet_counts = [0] * len(universe_rows[0])
+        column_planet_counts = [0] * (len(universe_rows[0])-1)
         for r in range(len(universe_rows)):
             row_planet_count = 0
             row = universe_rows[r]
@@ -26,11 +26,12 @@ class Universe:
                 new_universe.append(row)
             new_universe.append(row)
         
-        for c in range(len(column_planet_counts)):
-            # If the column had no plants , expand every row at that point with a period
-            if column_planet_counts == 0:
-                for r in range(len(new_universe)):
-                    new_universe[r] = new_universe[r][:c] + '.' + new_universe[r][c:]
+        # If the column had no plants , expand every row at that point with a period
+        col_expansion_index = [c for c in range(len(column_planet_counts)) if column_planet_counts[c] == 0]
+        for r in range(len(new_universe)):
+            for c in range(len(col_expansion_index)):
+                expansion_col = col_expansion_index[c] + c
+                new_universe[r] = new_universe[r][:expansion_col] + '.' + new_universe[r][expansion_col:]
 
         self.universe = new_universe
         self.planets = []
@@ -41,15 +42,20 @@ class Universe:
                 if self.universe[y][x] == '#':
                     self.planets.append((x, y))
 
+    def __str__(self) -> str:
+        return_str = ''
+        for r in self.universe:
+            return_str = return_str + f'{r}\n'
+        return return_str
+
     def calculate_paths(self) -> List[int]:
         lengths_array = []
         for p in range(len(self.planets)-1):
-            for o in range(len(self.planets[p:])):
-                planet_p = self.planets[p]
+            planet_p = self.planets[p]
+            for o in range(p+1, len(self.planets), 1):
                 planet_o = self.planets[o]
                 distance = abs(planet_p[0]-planet_o[0]) + abs(planet_p[1]-planet_o[1])
-                # print(f'Checking {planet_p} vs. {planet_o}:\t{distance}')
-                lengths_array.append(distance+1)
+                lengths_array.append(distance)
         return lengths_array
         
 
@@ -61,8 +67,6 @@ def part_1():
 
     # Create a Universe
     universe = Universe(input_lines)
-
-    print(universe.planets)
 
     # Get array of lengths
     lengths_array = universe.calculate_paths()
