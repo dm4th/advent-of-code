@@ -12,8 +12,11 @@ class Tile:
         self.x = x_coord
         self.y = y_coord
 
+        self.is_loop = False
+
         if pipe_str == 'S':
             self.start = True
+            self.is_loop = True
         else:
             self.start = False
 
@@ -66,6 +69,15 @@ class Tile:
         except KeyError:
             print(f'Direction Error: {self} has no direction {input_dir}')
             return None
+
+    def reset_start(self, direction_1: str, direction_2: str) -> None:
+        if self.start:
+            self.direction_1 = direction_1
+            self.direction_2 = direction_2
+            self.direction = {
+                self.direction_1: self.direction_2,
+                self.direction_2: self.direction_1
+            }
 
 
 class Grid:
@@ -125,8 +137,26 @@ def walk_grid(grid: Grid, start_direction: str) -> int:
     while tile != grid.start:
         loop_count += 1
         tile, prev_direction = grid.step(tile, prev_direction)
+        tile.is_loop = True
         if not tile:
             return 0
+
+    return loop_count
+
+def count_inner_cells(grid: Grid):
+    loop_count = 0
+    for y in range(len(grid.container)):
+        in_loop = False
+        for x in range(len(grid.container[y])):
+
+            # Check if up-pointing member of loop - If so then flip the in loop flag
+            tile = grid.container[y][x]
+            if tile.is_loop and 'n' in tile.direction.keys():
+                in_loop = not in_loop
+            
+            # Check if in loop and cell is not part of the loop
+            if in_loop and not tile.is_loop:
+                loop_count += 1
 
     return loop_count
 
@@ -154,8 +184,25 @@ def part_2():
     with open('input.txt', 'r') as f:
         input_lines = f.readlines()  
 
-    return None
+    grid = Grid(input_lines)
+
+    start_directions = ['n','e','s','w']
+    loop_dirs = []
+
+    # Walk the Loop
+    for d in start_directions:
+        try:
+            _ = walk_grid(grid, d)
+            loop_dirs.append(d)
+        except Exception as e:
+            print(f'{d}:\t{e}')
+
+    # Reset the start node to an actual pipe
+    grid.start.reset_start(loop_dirs[0], loop_dirs[1])
+
+    # Check each tile for if it is in loop
+    return count_inner_cells(grid)
 
 if __name__ == '__main__':
-    print(part_1())
-    # print(part_2())
+    # print(part_1())
+    print(part_2())
